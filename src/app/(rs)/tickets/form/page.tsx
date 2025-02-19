@@ -4,7 +4,21 @@ import { getCustomer } from "@/lib/queries/getCustomer"
 import { getTicket } from "@/lib/queries/getTicket"
 import * as Sentry from "@sentry/nextjs"
 import TicketForm from "./TicketForm"
-import { tickets } from "@/db/schema"
+
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server"
+import {Users,init as kindeInit} from "@kinde/management-api-js"
+
+export async function generateMetaData(
+    {searchParams}:{searchParams:Promise<{[key:string]:string|undefined}>}
+){
+    const {customerId,ticketId}=await searchParams
+    if(!customerId && !ticketId){
+        return {title:"Missing customer ID or Ticket ID"}
+    }
+    if(customerId) return {title:`new ticket for customer #${customerId}`}
+
+    if(ticketId) return {title:`Edit Ticket #${ticketId}`}
+}
 
 export default async function TicketFormPage({searchParams}:{searchParams:Promise<{[key:string]:string|undefined}>}) {
     try {
@@ -17,6 +31,13 @@ export default async function TicketFormPage({searchParams}:{searchParams:Promis
                 </>
             )
         }
+
+        const {getPermission,getUser}=getKindeServerSession()
+        const[managerPermission,user]=await Promise.all([
+            getPermission("manager"),
+            getUser(),
+        ])
+        const isManager=managerPermission?.isGranted
         //new ticket form
         if(customerId){
             const customer=await getCustomer(parseInt(customerId))
@@ -38,7 +59,16 @@ export default async function TicketFormPage({searchParams}:{searchParams:Promis
                 )
             }
             //return ticket form
-            return <TicketForm customer={customer}/>
+            if(isManager){
+                kindeInit()
+                const {users}=await Users.getUsers()
+                const techs=users?users.map(user=>({id:user.email!,description:user.email!})):[]
+                return <TicketForm customer={customer} techs={techs}/>
+            }
+            else{
+                return <TicketForm customer={customer}/>
+            }
+            
         }
         //edit ticket
         if(ticketId){
@@ -54,9 +84,17 @@ export default async function TicketFormPage({searchParams}:{searchParams:Promis
             const customer=await getCustomer(ticket.customerId)
 
             //reutrn ticket form
-            console.log("ticket: ",ticket)
-            console.log("customer: ",customer)
-            return <TicketForm customer={customer} ticket={ticket}/>
+            if(isManager){
+                kindeInit()
+                const {users}=await Users.getUsers()
+                const techs=users?users.map(user=>({id:user.email!,description:user.email!})):[]
+                return <TicketForm customer={customer} ticket={ticket} techs={techs}/>
+            }
+            else{
+                const isEditable=user.email?.toLowerCase()===ticket.tech.toLowerCase()
+                return <TicketForm customer={customer} ticket={ticket} isEditable={isEditable}/>
+            }
+            
         }
         
         

@@ -4,6 +4,16 @@ import { getCustomer } from "@/lib/queries/getCustomer";
 import * as Sentry from "@sentry/nextjs"
 import CustomerForm from "./CustomerForm";
 
+export async function generateMetadata(
+    {searchParams}:
+    {searchParams:Promise<{[key:string]:string|undefined}>}
+){
+    const {customerId}=await searchParams
+    if(!customerId)return {title:"New Customer"}
+
+    return {title:`Edit Customer #${customerId}`}
+}
+
 
 export default async function CustomerFromPage({searchParams}:{searchParams:Promise<{[key:string]:string|undefined}>}) {
     try {
