@@ -21,6 +21,8 @@ import { useToast } from "@/hooks/use-toast"
 import { LoaderCircle } from "lucide-react"
 
 import DisplayServerActionResponse from "@/components/DisplayServerActionResponse"
+import { useSearchParams } from "next/navigation"
+import { useEffect } from "react"
 
 type Props={
     customer?:selectCustomerSchemaType,
@@ -31,7 +33,25 @@ export default function CustomerForm({customer}:Props){
     const isManager=!isLoading && getPermission('manager')?.isGranted
     const {toast}= useToast()
 
-    const defaultValues:insertCustomerSchemaType={
+    const searchParams=useSearchParams()
+    const hasCustomerId=searchParams.has("customerId")
+
+    const emptyValues:insertCustomerSchemaType={
+        id:  0,
+        firstName: '',
+        lastName:  '',
+        address1:'',
+        address2:  '',
+        city: '',
+        state:'',
+        zip: '',
+        phone:  '',
+        email:  '',
+        notes:  '',
+        active: true,
+    }
+
+    const defaultValues:insertCustomerSchemaType=hasCustomerId?{
         id: customer?.id ?? 0,
         firstName: customer?.firstName ?? '',
         lastName: customer?.lastName ?? '',
@@ -44,12 +64,16 @@ export default function CustomerForm({customer}:Props){
         email: customer?.email ?? '',
         notes: customer?.notes ?? '',
         active:customer?.active?? true,
-    }
+    }:emptyValues
     const form=useForm<insertCustomerSchemaType>({
         mode:"onBlur",
         resolver:zodResolver(insertCustomerSchema),
         defaultValues
     })
+
+    useEffect(()=>{
+        form.reset(hasCustomerId?defaultValues:emptyValues)
+    },[searchParams.get("customerId")])//eslint-disable-line react-hooks/exhaustive-deps
     const {
         execute :executeSave,
         result :saveResult,
@@ -65,7 +89,7 @@ export default function CustomerForm({customer}:Props){
                 })
             }
         },
-        onError({error}){
+        onError(){
             toast({
                 variant:"destructive",
                 title:"Error !!!",

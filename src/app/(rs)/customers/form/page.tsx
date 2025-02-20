@@ -1,5 +1,5 @@
 import { BackButton } from "@/components/BackButton";
-import { ApiError } from "@/lib/ApiError";
+
 import { getCustomer } from "@/lib/queries/getCustomer";
 import * as Sentry from "@sentry/nextjs"
 import CustomerForm from "./CustomerForm";
@@ -19,7 +19,7 @@ export default async function CustomerFromPage({searchParams}:{searchParams:Prom
     try {
         const {customerId}=await searchParams
         if(!customerId){
-            return <CustomerForm/>
+            return <CustomerForm  key='new'/>
         }
         else{
             const customer=await getCustomer(parseInt(customerId))
@@ -31,14 +31,14 @@ export default async function CustomerFromPage({searchParams}:{searchParams:Prom
                     </>
                 )
             }
-            console.log(customer)
-            return <CustomerForm customer={customer}/>
+            //console.log(customer)
+            return <CustomerForm key={customerId} customer={customer}/>
         }
         
     } catch (error) {
         if(error instanceof Error){
             Sentry.captureException(error)
-            throw new ApiError(500,"Unexpected error has occured")
+            throw error
         }
     }
 }

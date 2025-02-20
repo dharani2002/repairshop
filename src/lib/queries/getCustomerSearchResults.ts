@@ -1,7 +1,7 @@
 import { ilike, or,sql } from "drizzle-orm";
 import { customers } from "@/db/schema";
 import { db } from "@/db";
-import CustomerSearch from "@/app/(rs)/customers/CustomerSearch";
+
 
 export async function getCustomerSearchResults(searchText:string){
     const results=await db.select()
@@ -15,5 +15,6 @@ export async function getCustomerSearchResults(searchText:string){
         ilike(customers.zip,`%${searchText}%`),
         sql`lower(concat(${customers.firstName},' ',${customers.lastName})) LIKE ${`%${searchText.toLowerCase().replace(" ","%")}%`}`    
     ))
+    .orderBy(customers.lastName)
     return results
 }
